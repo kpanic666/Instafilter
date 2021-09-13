@@ -17,6 +17,8 @@ struct ContentView: View {
   @State private var currentFilter: CIFilter = CIFilter.sepiaTone()
   @State private var showingFilterSheet = false
   @State private var processedImage: UIImage?
+  @State private var showingErrorAlert = false
+  @State private var errorAlertMessage = ""
   
   let context = CIContext()
 
@@ -66,6 +68,7 @@ struct ContentView: View {
           
           Button("Save") {
             guard let processedImage = processedImage else {
+              showErrorAlert(message: "There is no picture to save.")
               return
             }
             
@@ -79,6 +82,9 @@ struct ContentView: View {
             
             imageSaver.writeToPhotoAlbum(image: processedImage)
           }
+          .alert(isPresented: $showingErrorAlert, content: {
+              Alert(title: Text(errorAlertMessage))
+          })
         }
         
       }
@@ -88,7 +94,9 @@ struct ContentView: View {
         ImagePicker(image: $inputImage)
       })
       .actionSheet(isPresented: $showingFilterSheet) {
-        ActionSheet(title: Text("Select a filter"), buttons: [
+        ActionSheet(
+          title: Text(CIFilter.localizedName(forFilterName: currentFilter.name) ?? currentFilter.name),
+          buttons: [
           .default(Text("Crystallize")) { self.setFilter(CIFilter.crystallize()) },
           .default(Text("Edges")) { self.setFilter(CIFilter.edges()) },
           .default(Text("Gaussian Blur")) { self.setFilter(CIFilter.gaussianBlur()) },
@@ -106,7 +114,7 @@ struct ContentView: View {
     guard let inputImage = inputImage else {
       return
     }
-    
+    // kCIAttributeFilterDisplayName
     let beginImage = CIImage(image: inputImage)
     currentFilter.setValue(beginImage, forKey: kCIInputImageKey)
     applyProcessing()
@@ -132,6 +140,11 @@ struct ContentView: View {
   func setFilter(_ filter: CIFilter) {
     currentFilter = filter
     loadImage()
+  }
+  
+  func showErrorAlert(message: String) {
+    errorAlertMessage = message
+    showingErrorAlert = true
   }
 }
 
